@@ -1,0 +1,71 @@
+Test data and test runs on micro:/mnt/disk1/ivan/home/tools/biosoft/autopvs1 + micro:/mnt/disk1/ivan/home/tools/autopvs1_test
+
+1. Нет проверки что оба аллеля потеряли функцию (Можно сделать используя поле GT из входного VCF + MOI (ModeOfInheritance) из ClinGen)
+2. Добавить валидацию входного VCF
+3. Работает только с каноническими хромосомам (1-22,X,Y,MT), есть unplaced scaffolds и альтернативные последовательности
+4. Используется только одна (лучшая) интерпретация (vep --flag_pick) последствий мутации  
+5. Используется только один "главный" транскрипт гена
+6. Источник для выбора "главного" транскрипта не прозрачен (файл data/clinvar_trans_stats.tsv)
+  To annotate the transcript, we first retrieved the most prevalent transcripts used in ClinVar (Landrum et al., 2018). The ClinVar 20200106 release was
+  used throughout this study. If no result was found in ClinVar, we retrieved transcripts
+  from RefSeqGene/the Locus Reference Genomic collaborations
+  (https://www.lrg-sequence.org). If both retrievals were unsuccessful, we used the
+  longest available transcript in the Reference Sequence (RefSeq) database (O'Leary et
+  al., 2016).
+7. Используется разметка генов неизвестного происхождения (файл data/ncbiRefSeq_hg38.gpe). Разметка должна совпадть с тем что использует VEP!
+8. Надо использовать MANE (и MANE plus) ? Но будут упускаться тканеспецифичные транскрипты. (https://www.gimjournal.org/article/S1098-3600(22)00999-6/fulltext)
+   Говорят что VEP можно запустить на MANE 
+9. Предпологается что reference вариант функциональный 
+10. Не учитываются паралоги.
+//12. splice_acceptor_variatn splice_donor_variant из VEP затрагивают только 2-base region, есть еще splice_region_variant который игнорируется.
+13. файл PVS1.levels - не понятно как получен, откуда уровни L0,L1,L2,L3,L2E,L3E - в Clingen такого нет. 18000 генов, в Clingen около 3000. 
+
+
+
+14 Init-codon loss interpretation is different from ACMG recomendations (намеренно)
+  In Autopvs1:
+    Prediction of the closest potential in-frame start codon
+Given the evidence that initial codons can be robust to variation, ClinGen’s SVI
+Working Group suggested that no PVS1 strength level higher than moderate should be
+assigned to mutations in the initial codon (Abou Tayoun et al., 2018). However, initial
+codon variants evaluated by the ClinGen gene-disease specific Expert Panels had their
+PVS1 strength level elevated from moderate to very strong if they had ≥1 pathogenic
+variant(s) upstream of the closest potential start codon (Abou Tayoun et al., 2018).
+We used a conservative threshold to assign the PVS1 strength level of initiation codon
+variants. We first extracted all 754 initiation codon variants from ClinVar and grouped
+them by their clinical significance. Next, we counted the number of P/LP variants
+upstream of the closest potential start codon for each initiation codon variant. The
+median number of each group was 7, 6, 0, 2.5 and 0 for P, LP, VUS, LB, and B
+initiation codon variants, respectively (Supp. Figure S1). We therefore assigned the
+PVS1 strength level as follows: number of upstream variants >6 (PVS1_VeryStrong),
+3 < number ≤ 6 (PVS1_Strong), 1 ≤ number ≤ 3 (PVS1_Moderate), number = 0
+(PVS1_Supporting).
+  ACMG:
+    Functional studies have shown that start re-initiation can be very
+robust occurring at alternate ATG or non-ATG sites downstream and even upstream of the
+lost original start site (Bazykin & Kochetov, 2011; Drabkin & RajBhandary, 1998; Lee et al.,
+2012; Na et al., 2018; Starck et al., 2012; Wan & Qian, 2014; Zur & Tuller, 2013). Based on
+these findings, the SVI Working Group generally does not recommend assigning PVS1 or
+PVS1_Strong for start loss variants. If alternative functional gene transcripts (i.e., found in
+transcript or expression databases) use an alternative start codon, then we recommend not
+applying PVS1 at any strength level for an initiation codon variant. If there are no alternative
+start codons in the transcript set for a gene, then we recommend applying PVS1_Moderate
+for a start loss variant if one or more pathogenic variant(s) have been reported 5’ of the next
+downstream putative in-frame start codon (Methionine). On the other hand, if no pathogenic
+variant(s) occur upstream of the new Methionine then PVS1_Supporting should be applied.
+
+
+15. TODO: check that whole gene deletion is handled properly
+16. Есть класс AutoPVS1CNV, но он не используется
+17. Каждая мутация рассматривается отдельно, а если несколько рядом? (например две frameshift вместе не являются frameshift)
+
+18. mutational_hotspots_hg38.txt - unknown source, not described in publication
+
+19. Что если входная мутация уже известна в clinvar? Можно ведь просто вернуть результат из clinvar
+
+20. Считается что разрушение сайта сплайсинга всегда приводит к exon skipping, это правда так? Не рассматривается Intron retention. splicing.py:isPreserveReadingFrame is not clear
+
+21. one-based coordinate errors in splicing.py
+     refseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);// intron.start is 1-based, but we use it as zero-based ???
+
+22. utils.py create_bed_dict - if site names are the same will overwrite om dict. This is the case for expert_curated_regions file
