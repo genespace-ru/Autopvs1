@@ -98,13 +98,7 @@ public class Maxent {
 	    double rest_score = 1;
 	    rest_score *= matrix3[0][hashseq(rest,0,7)];
 	    rest_score *= matrix3[1][hashseq(rest,7,7)];
-	    
-	    //This was in the original autopvs1, will be out of bounds ???
-	    //rest_score *= matrix3[2][hashseq(rest,14,9)]; 
-	    
-	    //This is my version
 	    rest_score *= matrix3[2][hashseq(rest,14,7)];
-	    
 	    rest_score *= matrix3[3][hashseq(rest,4,7)];
 	    rest_score *= matrix3[4][hashseq(rest,11,7)];
 	    rest_score /= matrix3[5][hashseq(rest,4,3)];
