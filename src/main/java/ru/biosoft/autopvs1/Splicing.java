@@ -236,13 +236,17 @@ public class Splicing {
 	public boolean isPreserveReadingFrame() {
 		if (isExonSkipping())
 			return getSkippedExonLength() % 3 == 0;
-		if (hasCrypticSpliceSite()) {
+		
+		if (isSpliceSiteDisrupted() && hasCrypticSpliceSite()) {
 			return (getCrypticSpliceSite().pos - refseq_start) % 3 == 0;
 		}
-		return true;//??? what is biological meaning
+		
+		//!spliceSiteDisrupted
+		return true;
 	}
 
 	private boolean isExonSkipping() {
+		//Why we assume that absence of splice site leads to exon skipping? what if intron retention???
 		if (isSpliceSiteDisrupted() && !hasCrypticSpliceSite())
 			return true;
 		return false;
