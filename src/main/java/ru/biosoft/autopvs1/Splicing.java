@@ -91,16 +91,18 @@ public class Splicing {
 		List<Interval> introns = r.transcript.getIntrons();
 		for (int intronIdx = 0; intronIdx < introns.size(); intronIdx++) {
 			Interval intron = introns.get(intronIdx);
-			for (int pos = r.variant.pos; pos < r.variant.pos + r.variant.ref.length(); pos++) {
-				int distanceToIntronStart = pos - intron.start;// mix of 1-based pos and zero based intron.start???
-				int distanceToIntronEnd = pos - intron.end;
+			for (int pos = r.variant.pos; pos < r.variant.pos + r.variant.ref.length(); pos++) {//in the case of insertion/deletion first pos actually not changed (according to VCF specification) ???
+				// pos is one-based, intron is zero based [start,end)
+				int distanceToIntronStart = (pos - 1) - intron.start;
+				int distanceToIntronEnd = (pos - 1) - (intron.end - 1);
 				if (r.transcript.forwardStrand) {
+					//Why we search for overlap with a whole splicing site, when PVS1 should only consider mutation of 2-base region of intron???
 					if (distanceToIntronStart > -DONOR_EXON && distanceToIntronStart <= DONOR_INTRON)// [-2,-1,0,1,2,3,4,5,6]
 					{
 						type = "donor";
 						refseq_start = intron.start - DONOR_EXON;
 						refseq_end = intron.start + DONOR_INTRON;
-						refseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);// intron.start is 1-based, but we use it as zero-based ???
+						refseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);
 
 						byte[] altseq_exon_end = {};
 						byte[] altseq_intron_end = {};
@@ -161,7 +163,7 @@ public class Splicing {
 
 				} else// reverse strand, TODO: rewrite by using relative coordinates
 				{
-					if (-ACCEPTOR_EXON < distanceToIntronStart && distanceToIntronStart <= ACCEPTOR_INTRON) {
+					if (-ACCEPTOR_EXON <= distanceToIntronStart && distanceToIntronStart < ACCEPTOR_INTRON) {
 						type = "acceptor";
 						refseq_start = intron.start - ACCEPTOR_EXON;
 						refseq_end = intron.start + ACCEPTOR_INTRON;
@@ -286,6 +288,7 @@ public class Splicing {
 	}
 
 	public SpliceSite getCrypticSpliceSite() {
+		//Why we searach cryptic splice site in refseq, it should work in altseq???
 		for (int d = 1; d <= 50; d++)
 			for (int o : new int[] { -1, 1 }) {
 				SpliceSite ss = new SpliceSite();
