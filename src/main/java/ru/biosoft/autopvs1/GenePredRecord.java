@@ -60,6 +60,18 @@ public class GenePredRecord {
 			for(int i = 0; i < xs.length; i++)
 				t.exonEnds[i] = Integer.parseInt(xs[i]);
 			
+			if(t.exonStarts.length != t.exonEnds.length || t.exonStarts.length != t.exonCount)
+				throw new IllegalArgumentException();
+			
+			for(int i = 1; i < t.exonStarts.length; i++)
+				if(t.exonStarts[i] < t.exonStarts[i-1])
+					throw new IllegalArgumentException();
+
+			for(int i = 1; i < t.exonEnds.length; i++)
+				if(t.exonEnds[i] < t.exonEnds[i-1])
+					throw new IllegalArgumentException();
+			
+			
 			t.score = Integer.parseInt(parts[11]);
 			t.name2 = parts[12];
 			
