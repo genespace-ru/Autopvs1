@@ -53,18 +53,17 @@ public class Splicing {
 	private void calcMaxEntScore() {
 		// What about alt.length() != ref.length() ???
 		if (type.equals("donor")) {
-			if (refseq.length == 9)
-				maxentscore_ref = maxent.score5(refseq);
-			if (altseq.length == 9)
+			maxentscore_ref = maxent.score5(refseq);
+			if(altseq != null)
 				maxentscore_alt = maxent.score5(altseq);
 		} else if (type.equals("acceptor")) {
-			if (refseq.length == 23)
-				maxentscore_ref = maxent.score3(refseq);
-			if (altseq.length == 23)
+			maxentscore_ref = maxent.score3(refseq);
+			if(altseq != null)
 				maxentscore_alt = maxent.score3(altseq);
 		} else
 			throw new IllegalArgumentException();
-		maxentfoldchange = maxentscore_alt / maxentscore_ref;
+		if(altseq != null)
+			maxentfoldchange = maxentscore_alt / maxentscore_ref;
 
 		maxentscore_ref = Math.round(maxentscore_ref * 100) / 100d;
 		maxentscore_alt = Math.round(maxentscore_alt * 100) / 100d;
@@ -100,28 +99,19 @@ public class Splicing {
 					if (distanceToIntronStart > -DONOR_EXON && distanceToIntronStart <= DONOR_INTRON)// [-2,-1,0,1,2,3,4,5,6]
 					{
 						type = "donor";
-						refseq_start = intron.start - DONOR_EXON;
-						refseq_end = intron.start + DONOR_INTRON;
+						refseq_start = intron.start - DONOR_EXON;//zero based, including
+						refseq_end = intron.start + DONOR_INTRON;//zero based, excluding
 						refseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);
 
-						byte[] altseq_exon_end = {};
-						byte[] altseq_intron_end = {};
-						if (intron.start - DONOR_EXON < r.variant.pos - 1)
-							altseq_exon_end = Arrays.copyOfRange(chrSeq, refseq_start, r.variant.pos - 1);
-						if (r.variant.pos + r.variant.ref.length() - 1 < refseq_end + r.variant.ref.length()
-								- r.variant.alt.length())
-							altseq_intron_end = Arrays.copyOfRange(chrSeq, r.variant.pos + r.variant.ref.length() - 1,
-									refseq_end + r.variant.ref.length() - r.variant.alt.length());
-						// Concatenate altseq_exon_end+r.variant.alt+altseq_intron_end
-						//what if r.variant.alt.length != r.variant.ref.length ??? the length of altseq will be incorrect and maxentscore will not be calculated
-						altseq = new byte[altseq_exon_end.length + r.variant.alt.length() + altseq_intron_end.length];
-						int j = 0;
-						for (int i = 0; i < altseq_exon_end.length; i++)
-							altseq[j++] = altseq_exon_end[i];
-						for (int i = 0; i < r.variant.alt.length(); i++)
-							altseq[j++] = (byte) r.variant.alt.charAt(i);
-						for (int i = 0; i < altseq_intron_end.length; i++)
-							altseq[j++] = altseq_intron_end[i];
+						if(r.variant.ref.length() > 1 || r.variant.alt.length() > 1)//ins or del overlap splice site
+						{
+							altseq = null;//assume that splice site is always disrupted in this case. We should search for nearby cryptic splice site in alternative sequence later.
+						}else
+						{
+							//single nucleotide variant
+							altseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);
+							altseq[r.variant.pos-1-refseq_start] = (byte) r.variant.alt.charAt(0);
+						}
 
 						if (distanceToIntronStart > 0)
 							index = "IVS" + (intronIdx + 1) + "+" + distanceToIntronStart;
@@ -135,23 +125,16 @@ public class Splicing {
 						refseq_start = intron.end - ACCEPTOR_INTRON;
 						refseq_end = intron.end + ACCEPTOR_EXON;
 						refseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);
-						byte[] altseq_exon_end = {};
-						byte[] altseq_intron_end = {};
-						if (r.variant.pos + r.variant.ref.length() - 1 < refseq_end)
-							altseq_exon_end = Arrays.copyOfRange(chrSeq, r.variant.pos + r.variant.ref.length() - 1,
-									refseq_end);
-						if (refseq_start - r.variant.ref.length() + r.variant.alt.length() < r.variant.pos - 1)
-							altseq_intron_end = Arrays.copyOfRange(chrSeq,
-									refseq_start - r.variant.ref.length() + r.variant.alt.length(), r.variant.pos - 1);
-						// Concatenate altseq_intron_end+r.variant.alt+altseq_exon_end
-						altseq = new byte[altseq_exon_end.length + r.variant.alt.length() + altseq_intron_end.length];
-						int j = 0;
-						for (int i = 0; i < altseq_intron_end.length; i++)
-							altseq[j++] = altseq_intron_end[i];
-						for (int i = 0; i < r.variant.alt.length(); i++)
-							altseq[j++] = (byte) r.variant.alt.charAt(i);
-						for (int i = 0; i < altseq_exon_end.length; i++)
-							altseq[j++] = altseq_exon_end[i];
+						
+						if(r.variant.ref.length() > 1 || r.variant.alt.length() > 1)//ins or del overlap splice site
+						{
+							altseq = null;//assume that splice site is always disrupted in this case. We should search for nearby cryptic splice site in alternative sequence later.
+						}else
+						{
+							//single nucleotide variant
+							altseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);
+							altseq[r.variant.pos-1-refseq_start] = (byte) r.variant.alt.charAt(0);
+						}
 
 						if (distanceToIntronEnd > 0)
 							index = "EX" + (intronIdx + 2) + "+" + distanceToIntronEnd;
@@ -168,23 +151,16 @@ public class Splicing {
 						refseq_start = intron.start - ACCEPTOR_EXON;
 						refseq_end = intron.start + ACCEPTOR_INTRON;
 						refseq = Fasta.rc(Arrays.copyOfRange(chrSeq, refseq_start, refseq_end));
-						byte[] altseq_exon_end = {};
-						byte[] altseq_intron_end = {};
-						if (refseq_start < r.variant.pos - 1)
-							altseq_exon_end = Arrays.copyOfRange(chrSeq, refseq_start, r.variant.pos - 1);
-						if (r.variant.pos + r.variant.ref.length() - 1 < refseq_end + r.variant.ref.length()
-								- r.variant.alt.length())
-							altseq_intron_end = Arrays.copyOfRange(chrSeq, r.variant.pos + r.variant.ref.length() - 1,
-									refseq_end + r.variant.ref.length() - r.variant.alt.length());
-						altseq = new byte[altseq_exon_end.length + r.variant.alt.length() + altseq_intron_end.length];
-						int j = 0;
-						for (int i = 0; i < altseq_exon_end.length; i++)
-							altseq[j++] = altseq_exon_end[i];
-						for (int i = 0; i < r.variant.alt.length(); i++)
-							altseq[j++] = (byte) r.variant.alt.charAt(i);
-						for (int i = 0; i < altseq_intron_end.length; i++)
-							altseq[j++] = altseq_intron_end[i];
-						altseq = Fasta.rc(altseq);
+						if(r.variant.ref.length() > 1 || r.variant.alt.length() > 1)//ins or del overlap splice site
+						{
+							altseq = null;//assume that splice site is always disrupted in this case. We should search for nearby cryptic splice site in alternative sequence later.
+						}else
+						{
+							//single nucleotide variant
+							altseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);
+							altseq[r.variant.pos-1-refseq_start] = (byte) r.variant.alt.charAt(0);
+							altseq = Fasta.rc(altseq);
+						}
 
 						if (distanceToIntronStart > 0)
 							index = "IVS" + (introns.size() - intronIdx) + "-" + distanceToIntronStart;
@@ -199,23 +175,16 @@ public class Splicing {
 						refseq_end = intron.end + DONOR_EXON;
 						refseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);
 						refseq = Fasta.rc(refseq);
-						byte[] altseq_exon_end = {};
-						byte[] altseq_intron_end = {};
-						if (r.variant.pos + r.variant.ref.length() - 1 < refseq_end)
-							altseq_exon_end = Arrays.copyOfRange(chrSeq, r.variant.pos + r.variant.ref.length() - 1,
-									refseq_end);
-						if (refseq_start - r.variant.ref.length() + r.variant.alt.length() < r.variant.pos - 1)
-							altseq_intron_end = Arrays.copyOfRange(chrSeq,
-									refseq_start - r.variant.ref.length() + r.variant.alt.length(), r.variant.pos - 1);
-						altseq = new byte[altseq_exon_end.length + r.variant.alt.length() + altseq_intron_end.length];
-						int j = 0;
-						for (int i = 0; i < altseq_intron_end.length; i++)
-							altseq[j++] = altseq_intron_end[i];
-						for (int i = 0; i < r.variant.alt.length(); i++)
-							altseq[j++] = (byte) r.variant.alt.charAt(i);
-						for (int i = 0; i < altseq_exon_end.length; i++)
-							altseq[j++] = altseq_exon_end[i];
-						altseq = Fasta.rc(altseq);
+						if(r.variant.ref.length() > 1 || r.variant.alt.length() > 1)//ins or del overlap splice site
+						{
+							altseq = null;//assume that splice site is always disrupted in this case. We should search for nearby cryptic splice site in alternative sequence later.
+						}else
+						{
+							//single nucleotide variant
+							altseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);
+							altseq[r.variant.pos-1-refseq_start] = (byte) r.variant.alt.charAt(0);
+							altseq = Fasta.rc(altseq);
+						}
 
 						if (distanceToIntronEnd > 0)
 							index = "EX" + (introns.size() - intronIdx) + "-" + distanceToIntronEnd;
@@ -274,10 +243,14 @@ public class Splicing {
 	}
 
 	private boolean isExonSkipping() {
-		if (!hasCrypticSpliceSite() && maxentfoldchange < PERCENT_THRESHOLD // ??? why <
-				&& maxentscore_alt < 3)
+		if (isSpliceSiteDisrupted() && !hasCrypticSpliceSite())
 			return true;
 		return false;
+	}
+
+	private boolean isSpliceSiteDisrupted() {
+		return altseq == null || (maxentfoldchange < PERCENT_THRESHOLD 
+				&& maxentscore_alt < 3);
 	}
 
 	static class SpliceSite {
