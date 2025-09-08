@@ -113,11 +113,10 @@ public class Splicing {
 							altseq[r.variant.pos-1-refseq_start] = (byte) r.variant.alt.charAt(0);
 						}
 
-						if (distanceToIntronStart > 0)
-							index = "IVS" + (intronIdx + 1) + "+" + distanceToIntronStart;
+						if (distanceToIntronStart >= 0)
+							index = "IVS" + (intronIdx + 1) + "+" + (distanceToIntronStart+1);
 						else
-							index = "EX" + (intronIdx + 1) + '-' + (1 - distanceToIntronStart);
-						//System.err.println(type + " " + pos + " " + new String(refseq) + " " + new String(altseq));
+							index = "EX" + (intronIdx + 1) + "" + distanceToIntronStart;
 
 					}
 					if (-ACCEPTOR_INTRON < distanceToIntronEnd && distanceToIntronEnd <= ACCEPTOR_EXON) {
@@ -139,7 +138,7 @@ public class Splicing {
 						if (distanceToIntronEnd > 0)
 							index = "EX" + (intronIdx + 2) + "+" + distanceToIntronEnd;
 						else
-							index = "IVS" + (intronIdx + 1) + "-" + (1 - distanceToIntronEnd);
+							index = "IVS" + (intronIdx + 1) + "" + (distanceToIntronEnd-1);
 						
 						//System.err.println(type + " " + pos + " " + new String(refseq) + " " + new String(altseq));
 					}
@@ -162,10 +161,10 @@ public class Splicing {
 							altseq = Fasta.rc(altseq);
 						}
 
-						if (distanceToIntronStart > 0)
-							index = "IVS" + (introns.size() - intronIdx) + "-" + distanceToIntronStart;
+						if (distanceToIntronStart >= 0)
+							index = "IVS" + (introns.size() - intronIdx) + "-" + (distanceToIntronStart+1);
 						else
-							index = "EX" + (introns.size() - intronIdx + 1) + "+" + (1 - distanceToIntronStart);
+							index = "EX" + (introns.size() - intronIdx + 1) + "+" + (-distanceToIntronStart);
 						
 						//System.err.println(type + " " + pos + " " + new String(refseq) + " " + new String(altseq));
 					}
@@ -190,7 +189,6 @@ public class Splicing {
 							index = "EX" + (introns.size() - intronIdx) + "-" + distanceToIntronEnd;
 						else
 							index = "IVS" + (introns.size() - intronIdx) + "+" + (1 - distanceToIntronEnd);
-						//System.err.println(type + " " + pos + " " + new String(refseq) + " " + new String(altseq));
 					}
 
 				}
