@@ -505,11 +505,11 @@ public class Splicing {
 
 	public boolean isUndergoNMD() {
 		if (isPreserveReadingFrame())
-			return false;
+			return false;//in the case of cryptic splice site leading to coding part extension we should check stop codon in this part ???
 		if (hasCrypticSpliceSite())
 			return getTransSeqInfo().isNMDTarget;
 		else if (getSkippedExonId() >= r.transcript.exonStarts.length - 1)// last 2 exons
-			return false;
+			return false;//we should check new stop codon position here ???
 		else
 			return true;
 	}
@@ -543,7 +543,7 @@ public class Splicing {
 		}
 
 		res.transSeq = buffer.toByteArray();
-		res.stopCodon = 0;// ???what if stop codon not found?
+		res.stopCodon = -1;// ???what if stop codon not found? 
 		for (int x = 0; x + 2 < res.transSeq.length; x += 3) {
 			String codon = new String(res.transSeq, x, 3).toUpperCase();
 			if(codon.equals("TAA") || codon.equals("TAG") || codon.equals("TGA")) {
@@ -551,9 +551,15 @@ public class Splicing {
 				break;
 			}
 		}
+		
+		if(res.stopCodon == -1)
+		{
+			res.isNMDTarget = true;// Actually non-stop decay (NSD) occurs.
+			return res;
+		}
 
-		if (cdsSizes.size() == 1 || cdsSizes.stream().filter(x -> x > 0).count() == 1)
-			res.isNMDTarget = true;
+		if (cdsSizes.size() == 1)
+			res.isNMDTarget = false;
 		else {
 			int nmdCutoff = 0;
 			for (int i = 0; i < cdsSizes.size() - 1; i++)// except last exon
