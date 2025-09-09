@@ -487,16 +487,28 @@ public class Splicing {
 
 	public boolean variantRemoves10PercentOfProtein() {
 		if (hasCrypticSpliceSite()) {
-			int start, end;// ???should depend on donor/acceptor
+			int removed;
 			SpliceSite ss = getCrypticSpliceSite();
 			if (r.transcript.forwardStrand) {
-				start = refseq_start;
-				end = ss.pos;
+				if(type.equals("donor"))
+				{
+					removed = refseq_start - ss.pos;
+				}else
+				{
+					removed = ss.pos - refseq_start;
+				}
 			} else {
-				start = ss.pos;
-				end = refseq_start;
+				if(type.equals("donor"))
+				{
+					removed = ss.pos - refseq_start;
+				}else
+				{
+					removed = refseq_start - ss.pos;
+				}
 			}
-			return ((double) start - end) / r.transcript.getCDSLength() > 0.1;// ??? should be end-start
+			if(removed < 0)//negative means extension
+				removed = 0;
+			return ((double)removed) / r.transcript.getCDSLength() > 0.1;
 		} else if ((double) getSkippedExonLength() / r.transcript.getCDSLength() > 0.1)
 			return true;
 		else
