@@ -64,8 +64,14 @@ variant(s) occur upstream of the new Methionine then PVS1_Supporting should be a
 19. Что если входная мутация уже известна в clinvar? Можно ведь просто вернуть результат из clinvar
 
 20. Считается что разрушение сайта сплайсинга всегда приводит к exon skipping, это правда так? Не рассматривается Intron retention. splicing.py:isPreserveReadingFrame is not clear
+  Есть база данных эффектов мутаций на сплайсинг https://pmc.ncbi.nlm.nih.gov/articles/PMC9867871/
+  Пример exon skipping https://www.sciencedirect.com/science/article/pii/S0006497120508793
+  donor splice-site mutations occurring in a rapidly spliced intron with respect to upstream introns lead preferentially to exon skipping, while donor splice-site mutations in later-spliced introns lead to intron inclusion or cryptic splice-site utilization.
+  https://pmc.ncbi.nlm.nih.gov/articles/PMC6060985/
 
 21. one-based coordinate errors in splicing.py
      refseq = Arrays.copyOfRange(chrSeq, refseq_start, refseq_end);// intron.start is 1-based, but we use it as zero-based ???
 
 22. utils.py create_bed_dict - if site names are the same will overwrite om dict. This is the case for expert_curated_regions file
+
+23.
