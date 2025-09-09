@@ -51,7 +51,6 @@ public class Splicing {
 	}
 
 	private void calcMaxEntScore() {
-		// What about alt.length() != ref.length() ???
 		if (type.equals("donor")) {
 			maxentscore_ref = maxent.score5(refseq);
 			if(altseq != null)
@@ -95,7 +94,7 @@ public class Splicing {
 				int distanceToIntronStart = (pos - 1) - intron.start;
 				int distanceToIntronEnd = (pos - 1) - (intron.end - 1);
 				if (r.transcript.forwardStrand) {
-					//Why we search for overlap with a whole splicing site, when PVS1 should only consider mutation of 2-base region of intron???
+					//Why we search for overlap with a whole splicing site, when PVS1 should only consider mutation of 2-base region of intron??? (this filtering done by VEP)
 					if (distanceToIntronStart > -DONOR_EXON && distanceToIntronStart <= DONOR_INTRON)// [-2,-1,0,1,2,3,4,5,6]
 					{
 						type = "donor";
@@ -208,7 +207,6 @@ public class Splicing {
 
 	}
 
-	// Is this formatting correct when ref.length != alt.length???
 	private void formatAcceptor(byte[] seq) {
 		for (int i = 0; i < seq.length; i++) {
 			byte c = seq[i];
@@ -359,6 +357,7 @@ public class Splicing {
 	Pattern pat2 = Pattern.compile("EX(\\d+)([+|-])(\\d+)");
 
 	// ???I don't understand how exon skipping occurs
+	// This is not such a simple process https://pmc.ncbi.nlm.nih.gov/articles/PMC6060985/
 	public int getSkippedExonId() {
 		// better to save these values during parsing, rather then parse index
 		Matcher m1 = pat1.matcher(index);
@@ -368,7 +367,7 @@ public class Splicing {
 			if (m1.group(2).charAt(0) == '+')
 				return intron_id;
 			else
-				return intron_id + 1;
+				return intron_id + 1; //is this correct ???
 		}
 		if (m2.matches()) {
 			int exon_id = Integer.parseInt(m2.group(1));// one-based
@@ -386,7 +385,7 @@ public class Splicing {
 			if (m1.group(2).charAt(0) == '+')
 				return r.transcript.getCDSSizes().get(intron_id - 1);
 			else
-				return r.transcript.getCDSSizes().get(intron_id);// ???error: cdsSizes reversed if negative strand
+				return r.transcript.getCDSSizes().get(intron_id);
 		}
 		if (m2.matches()) {
 			int exon_id = Integer.parseInt(m2.group(1));// one-based
@@ -421,9 +420,18 @@ public class Splicing {
 		if (chr.startsWith("chr"))
 			chr = chr.substring("chr".length());
 		FunctionalRegion result = new FunctionalRegion();
+		
+		if(!isSpliceSiteDisrupted())
+		{
+			//main splice site still functional
+			result.isFunctional = false;
+			result.description = "NA";
+			return result;
+		}
+		
 		int start, end;
 		if (hasCrypticSpliceSite() && isPreserveReadingFrame()) {
-			int exonId = getSkippedExonId() - 1;
+			int exonId = getSkippedExonId() - 1;//why we use skippedExonId here??? this is the case of cryptic splice site usage, not exon skipping
 			SpliceSite crSpliceSite = getCrypticSpliceSite();
 			if (r.transcript.forwardStrand) {
 				if (type.equals("acceptor")) {
@@ -435,16 +443,14 @@ public class Splicing {
 				}
 			} else {
 				if (type.equals("acceptor")) {
-					start = r.transcript.exonStarts[r.transcript.exonStarts.length - 1 - exonId];// ???error: exonStarts
-																									// are not reversed
+					start = r.transcript.exonStarts[r.transcript.exonStarts.length - 1 - exonId];
 					end = crSpliceSite.pos;
 				} else {
 					start = crSpliceSite.pos;
-					end = r.transcript.exonEnds[r.transcript.exonStarts.length - 1 - exonId];// ???error: exonEnds are
-																								// not reversed
+					end = r.transcript.exonEnds[r.transcript.exonStarts.length - 1 - exonId];
 				}
 			}
-			if (start >= end)// we faild to interpret cryptic splice site
+			if (start >= end)//cryptic splice site leads to exon extension (not deletion)
 			{
 				result.isFunctional = false;
 				result.description = "NA";
@@ -453,7 +459,6 @@ public class Splicing {
 		} else if (hasCrypticSpliceSite() && !isPreserveReadingFrame()) {
 			// ???I don't understand this part
 			// TODO: new stop codon position
-			int exonId = getSkippedExonId() - 1;
 			SpliceSite crSpliceSite = getCrypticSpliceSite();
 			if (r.transcript.forwardStrand) {
 				start = crSpliceSite.pos;
@@ -468,17 +473,13 @@ public class Splicing {
 				start = r.transcript.exonStarts[exonId];
 				end = r.transcript.exonEnds[exonId];
 			} else {
-				start = r.transcript.exonStarts[r.transcript.exonStarts.length - 1 - exonId];// ???error: exonStarts are
-																								// not reversed
-				end = r.transcript.exonEnds[r.transcript.exonEnds.length - 1 - exonId];// ???error: exonEnds are not
-																						// reversed
+				start = r.transcript.exonStarts[r.transcript.exonStarts.length - 1 - exonId];
+				end = r.transcript.exonEnds[r.transcript.exonEnds.length - 1 - exonId];
 			}
 
 		} else {
-			// ??? what is here? intron retention?
-			result.isFunctional = false;
-			result.description = "NA";
-			return result;
+			//should not become here
+			throw new IllegalStateException();
 		}
 
 		return PVS1.getFunctionalRegion(chr, start, end, data);
