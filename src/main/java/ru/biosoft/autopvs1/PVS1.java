@@ -406,7 +406,7 @@ public class PVS1 {
 	 */
 	private boolean isNMDTartget(VEPResult r) {
 		if(r.transcript.gene.equals("GJB2"))
-			return true;//Any mutation in this gene leads to NMD???
+			return true;//Any mutation in this gene leads to NMD??? See https://pmc.ncbi.nlm.nih.gov/articles/PMC11021044/. We should check at least that mutation cause premature stop codon. 
 		int newStopCodon = get_pHGVS_termination(r.hgvs_p);//???can be -1s
 		List<Integer> cdsSizes = r.transcript.getCDSSizes().stream().filter(l->l>0).collect(Collectors.toList());
 		if(cdsSizes.size() <= 1)
@@ -521,10 +521,11 @@ public class PVS1 {
 				for(Interval i : cdsList)
 				{
 					cdsSizeTmp += i.end - i.start;
-					if(cdsSizeTmp >= altStartCodon)//???error: should be altStartCodon > cdsSizeTmp
+					if(cdsSizeTmp > altStartCodon)//???error: should be altStartCodon > cdsSizeTmp
 					{
 						genomicPos = i.end - (cdsSizeTmp - altStartCodon);
-						altStartInterval.add(new Interval(i.start, genomicPos));
+						if(i.start < genomicPos)
+							altStartInterval.add(new Interval(i.start, genomicPos));
 						break;
 					}else
 						altStartInterval.add(i);
@@ -535,10 +536,11 @@ public class PVS1 {
 				for(Interval i : cdsList)
 				{
 					cdsSizeTmp += i.end - i.start;
-					if( cdsSizeTmp >= altStartCodon)//???error: should be altStartCodon > cdsSizeTmp
+					if( cdsSizeTmp > altStartCodon)//???error: should be altStartCodon > cdsSizeTmp
 					{
-						genomicPos = i.start + (cdsSizeTmp - altStartCodon);
-						altStartInterval.add(new Interval(genomicPos, i.end));
+						genomicPos = i.start + (cdsSizeTmp - altStartCodon)-1;
+						if(genomicPos+1 < i.end)
+							altStartInterval.add(new Interval(genomicPos+1, i.end));
 						break;
 					}else
 						altStartInterval.add(i);
