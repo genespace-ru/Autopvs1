@@ -262,6 +262,7 @@ public class Splicing {
 
 	public SpliceSite getCrypticSpliceSite() {
 		//Why we searach cryptic splice site in refseq, it should work in altseq???
+		//What if cryptic donor splice site found after corresponding acceptor ???
 		for (int d = 1; d <= 50; d++)
 			for (int o : new int[] { -1, 1 }) {
 				SpliceSite ss = new SpliceSite();
@@ -269,7 +270,7 @@ public class Splicing {
 				if (type.equals("donor")) {
 					ss.context = Arrays.copyOfRange(chrSeq, ss.pos, ss.pos + 9);
 					int alt_index = r.variant.pos - ss.pos - 1;
-					if (0 < alt_index && alt_index < 9) {
+					if (0 < alt_index && alt_index < 9) {//Incorrect check of overlap if variant is deletion???
 						// ???incorrect if alt.length != ref.length or alt.length > 1
 						String spliceContextAlt = new String(ss.context, 0, alt_index) + r.variant.alt;
 						int offset = alt_index + r.variant.alt.length();
@@ -555,7 +556,7 @@ public class Splicing {
 		}
 
 		res.transSeq = buffer.toByteArray();
-		res.stopCodon = -1;// ???what if stop codon not found? 
+		res.stopCodon = -1; 
 		for (int x = 0; x + 2 < res.transSeq.length; x += 3) {
 			String codon = new String(res.transSeq, x, 3).toUpperCase();
 			if(codon.equals("TAA") || codon.equals("TAG") || codon.equals("TGA")) {
