@@ -149,6 +149,7 @@ public class PVS1 {
 		case "init-loss":
 			startCodon(r, res);
 			break;
+			//deletion and duplication branches absent??? see PVS1 paper
 		default:
 				res.criterion = "IC5";
 				res.strength_raw = ACMGStrength.UNMET;
@@ -521,7 +522,7 @@ public class PVS1 {
 				for(Interval i : cdsList)
 				{
 					cdsSizeTmp += i.end - i.start;
-					if(cdsSizeTmp > altStartCodon)//???error: should be altStartCodon > cdsSizeTmp
+					if(cdsSizeTmp > altStartCodon)
 					{
 						genomicPos = i.end - (cdsSizeTmp - altStartCodon);
 						if(i.start < genomicPos)
@@ -536,7 +537,7 @@ public class PVS1 {
 				for(Interval i : cdsList)
 				{
 					cdsSizeTmp += i.end - i.start;
-					if( cdsSizeTmp > altStartCodon)//???error: should be altStartCodon > cdsSizeTmp
+					if( cdsSizeTmp > altStartCodon)
 					{
 						genomicPos = i.start + (cdsSizeTmp - altStartCodon)-1;
 						if(genomicPos+1 < i.end)
